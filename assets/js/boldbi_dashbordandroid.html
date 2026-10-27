@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.boldbi.com/embedded-sdk/latest/boldbi-embed.js"></script>
+    <style>
+        html, body {
+          height: 100%;
+          margin: 0;
+          overflow: hidden;
+        }
+        #dashboard {
+          height: 100%;
+          width: 100%;
+        }
+    </style>
+    <script>
+        // Listen for Flutter message
+        window.addEventListener("message", function (event) {
+          console.log("Message received from Flutter:", event.data);
+
+          var config = event.data;
+          if (!config.__SERVER_URL__ || !config.__DASHBOARD_ID__ || !config.__URL__) {
+            console.error("Missing required BoldBI params:", config);
+            return;
+          }
+            var UserID = "335";
+          // Create BoldBI instance
+          var dashboard = BoldBI.create({
+            serverUrl: config.__SERVER_URL__,
+            dashboardId: config.__DASHBOARD_ID__,
+            embedContainerId: "dashboard",
+            embedType: "component",
+            environment: "onpremise",
+            mode: BoldBI.Mode.View,
+            expirationTime: 10000,
+
+            authorizationServer: {
+              url: config.__URL__,  // pass userId here to backend
+              beforeSend: function () {
+                console.log("Calling Authorization Server API:", this.url);
+              }
+            }
+          });
+
+          // Load dashboard
+          dashboard.loadDashboard();
+        });
+    </script>
+</head>
+<body>
+<div id="dashboard"></div>
+</body>
+</html>

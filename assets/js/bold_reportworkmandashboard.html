@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Bold Report Viewer</title>
+
+    <!-- Bold Reports CSS -->
+    <link href="https://cdn.boldreports.com/7.1.9/content/material/bold.reports.all.min.css" rel="stylesheet" />
+    <link href="https://cdn.boldreports.com/7.1.9/content/bootstrap-theme/bold.reports.all.min.css" rel="stylesheet" />
+
+    <!-- jQuery and Modernizr -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+    <!-- Essential JS 1 from Bold Reports -->
+    <script src="https://cdn.boldreports.com/7.1.9/scripts/common/ej.web.all.min.js"></script>
+
+    <!-- Bold Reports Viewer -->
+    <script src="https://cdn.boldreports.com/7.1.9/scripts/common/bold.reports.common.min.js"></script>
+    <script src="https://cdn.boldreports.com/7.1.9/scripts/common/bold.reports.widgets.min.js"></script>
+    <script src="https://cdn.boldreports.com/7.1.9/scripts/data-visualization/ej.chart.min.js"></script>
+    <script src="https://cdn.boldreports.com/7.1.9/scripts/bold.report-viewer.min.js"></script>
+    <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #viewer {
+      height: 100%;
+      width: 100%;
+    }
+  </style>
+
+</head>
+<body>
+<div id="viewer" style="height: 100vh; width: 100%;"></div>
+
+<script type="text/javascript">
+    window.addEventListener('message', function (event) {
+      try {
+
+ // get xml1 and xml2 from event
+    const { reportServiceUrl, reportPath, xml1, xml2 } = event.data;
+
+    // prepare safe strings
+    const xml1String = typeof xml1 === 'string' ? xml1 : JSON.stringify(xml1);
+    const xml2String = typeof xml2 === 'string' ? xml2 : JSON.stringify(xml2);
+
+    console.log("📩 XML1 string:", xml1String);
+    console.log("📩 XML2 string:", xml2String);
+
+        $("#viewer").boldReportViewer({
+          reportServiceUrl: reportServiceUrl,
+          reportPath: reportPath,
+          parameterSettings: {
+            hideTooltip: true
+          },
+         parameters: [
+            {
+              name: "pXMLFILE_1",
+              labels: ["pXMLFILE_1"],
+              values: [xml1String]
+            },
+            {
+              name: "pXMLFILE_2",
+              labels: ["pXMLFILE_2"],
+              values: [xml2String]
+            }
+          ],
+          beforeReportLoad: function (args) {
+            console.log("📦 Parameters going to API:", args.parameters);
+            args.parameters.forEach(param => {
+              console.log(`🔍 ${param.name}:`, param.values);
+            });
+          },
+         reportLoaded: function (args) {
+  console.log("✔️ Report loaded!");
+// Correct object logging — no string prefix
+  console.log("args:", JSON.stringify(args, null, 2));
+console.log("args.model:", JSON.stringify(args.model, null, 2));
+//console.log("args.model.parameters:", JSON.stringify(args.model?.parameters, null, 2));
+
+    if (!args) {
+    console.warn("❗ No args received in reportLoaded.");
+    return;
+  }
+
+  console.log("🔍 args:", args);
+   if (!args.model) {
+    console.warn("⚠️ No 'model' in args.");
+    return;
+  }
+
+  if (!args.model.parameters) {
+    console.warn("⚠️ 'model.parameters' is missing.");
+    return;
+  }
+
+  if (args.model.parameters.length === 0) {
+    console.warn("⚠️ Parameters array is empty.");
+    return;
+  }
+  if (args.model && args.model.parameters) {
+    args.model.parameters.forEach(param => {
+      console.log(`✅ Used: ${param.name} =`, param.values); // 🔁 use 'values' (lowercase v)
+    });
+  } else {
+    console.warn("⚠️ No parameters found in report.");
+  }
+}
+
+        });
+
+      } catch (err) {
+        console.error("❌ Failed to parse message or initialize viewer:", err);
+      }
+    });
+  </script>
+</body>
+</html>

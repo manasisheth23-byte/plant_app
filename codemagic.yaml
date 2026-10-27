@@ -1,0 +1,69 @@
+workflows:
+  ios-testflight:
+    name: iOS TestFlight Build
+
+    instance_type: mac_mini_m2
+
+    integrations:
+      app_store_connect: Codemagic CI
+
+    environment:
+      flutter: 3.35.7
+      xcode: 26.0
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.cloud9.c9plantapp
+
+    scripts:
+      - name: Flutter Packages
+        script: |
+          flutter clean
+          flutter pub get
+
+      - name: Install CocoaPods
+        script: |
+          cd ios
+
+          rm -rf Pods
+          rm -rf Podfile.lock
+          rm -rf .symlinks
+
+          pod deintegrate
+          pod cache clean --all
+          pod repo update
+
+          export LANG=en_US.UTF-8
+
+          pod install --repo-update
+
+          cd ..
+
+      - name: Apply Code Signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build IPA
+        script: |
+          flutter build ipa \
+            --release \
+            --verbose \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+
+      email:
+        recipients:
+          - cloud9ebizind@gmail.com
+          - asmitabagal@gmail.com
+        notify:
+          success: true
+          failure: true
