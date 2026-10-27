@@ -8,10 +8,12 @@ workflows:
       app_store_connect: Codemagic CI
 
     environment:
-  flutter: stable
-  ios_signing:
-    distribution_type: app_store
-    bundle_identifier: com.cloud9.c9plantapp
+      flutter: 3.35.7
+      xcode: 26.0
+
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.cloud9.c9plantapp
 
     scripts:
       - name: Flutter Packages
