@@ -106,7 +106,7 @@ dependencies:
   dropdown_search: ^5.0.6
   package_info_plus: ^8.3.0
   archive: ^3.4.10
-  app_settings: ^6.1.0
+  app_settings: ^6.1.1
 
 
 
