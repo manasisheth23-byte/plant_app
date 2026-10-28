@@ -11,18 +11,44 @@ workflows:
       cocoapods: default
 
     scripts:
+      - name: Check Flutter environment
+        script: |
+          flutter --version
+          flutter doctor -v
+
       - name: Get Flutter dependencies
         script: |
           flutter pub get
 
       - name: Install CocoaPods dependencies
         script: |
-          find . -name "Podfile" -execdir pod install \;
+          if [ -f ios/Podfile ]; then
+            cd ios
+            pod install
+            cd ..
+          else
+            echo "No ios/Podfile found; skipping CocoaPods installation."
+          fi
 
-      - name: Build iOS without code signing
+      - name: Clean Flutter build
+        script: |
+          flutter clean
+          flutter pub get
+
+      - name: Build unsigned iOS debug app
         script: |
           flutter build ios --debug --no-codesign
 
+      - name: Verify build output
+        script: |
+          if [ -d "build/ios/iphoneos/Runner.app" ]; then
+            echo "Unsigned iOS app built successfully."
+          else
+            echo "Expected Runner.app not found."
+            find build/ios -maxdepth 4 -name "*.app" -print || true
+            exit 1
+          fi
+
     artifacts:
-      - build/ios/iphoneos/**/*.app
+      - build/ios/iphoneos/*.app
       - /tmp/xcodebuild_logs/*.log
