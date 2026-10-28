@@ -1,7 +1,7 @@
 
 workflows:
   flutter-ios-unsigned:
-    name: Flutter iOS Unsigned Build
+    name: Flutter iOS Unsigned IPA Build
     max_build_duration: 120
     instance_type: mac_mini_m2
 
@@ -14,7 +14,7 @@ workflows:
       - name: Check Flutter environment
         script: |
           flutter --version
-          flutter doctor -v
+          xcodebuild -version
 
       - name: Get Flutter dependencies
         script: |
@@ -26,29 +26,43 @@ workflows:
             cd ios
             pod install
             cd ..
-          else
-            echo "No ios/Podfile found; skipping CocoaPods installation."
           fi
 
-      - name: Clean Flutter build
+      - name: Build unsigned iOS app
         script: |
-          flutter clean
-          flutter pub get
+          flutter build ios --release --no-codesign
 
-      - name: Build unsigned iOS debug app
+      - name: Package unsigned IPA
         script: |
-          flutter build ios --debug --no-codesign
+          set -e
 
-      - name: Verify build output
-        script: |
-          if [ -d "build/ios/iphoneos/Runner.app" ]; then
-            echo "Unsigned iOS app built successfully."
-          else
-            echo "Expected Runner.app not found."
-            find build/ios -maxdepth 4 -name "*.app" -print || true
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          IPA_DIR="build/ios/unsigned_ipa"
+          PAYLOAD_DIR="$IPA_DIR/Payload"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: Runner.app not found at $APP_PATH"
+            find build/ios -name "*.app" -print || true
             exit 1
           fi
 
+          rm -rf "$IPA_DIR"
+          mkdir -p "$PAYLOAD_DIR"
+
+          cp -R "$APP_PATH" "$PAYLOAD_DIR/Runner.app"
+
+          cd "$IPA_DIR"
+          zip -qr ../Runner-unsigned.ipa Payload
+
+          echo "Unsigned IPA created:"
+          ls -lh ../Runner-unsigned.ipa
+
+      - name: Verify IPA
+        script: |
+          test -f build/ios/Runner-unsigned.ipa
+          unzip -l build/ios/Runner-unsigned.ipa | head -30
+
     artifacts:
-      - build/ios/iphoneos/*.app
+      - build/ios/Runner-unsigned.ipa
+      - build/ios/iphoneos/Runner.app
       - /tmp/xcodebuild_logs/*.log
