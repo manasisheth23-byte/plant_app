@@ -1,5 +1,5 @@
 
-name: Flutter iOS Build
+name: Flutter iOS Unsigned IPA Build
 
 on:
   push:
@@ -26,14 +26,51 @@ jobs:
 
       - name: Install CocoaPods
         run: |
-          find . -name "Podfile" -execdir pod install \;
+          if [ -f ios/Podfile ]; then
+            cd ios
+            pod install
+          fi
 
       - name: Build unsigned iOS app
         run: flutter build ios --release --no-codesign
+
+      - name: Package unsigned IPA
+        shell: bash
+        run: |
+          set -e
+
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          IPA_DIR="$RUNNER_TEMP/ipa/Payload"
+          IPA_PATH="$RUNNER_TEMP/Runner-unsigned.ipa"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: Runner.app not found"
+            find build/ios -name "*.app" -print || true
+            exit 1
+          fi
+
+          rm -rf "$RUNNER_TEMP/ipa"
+          mkdir -p "$IPA_DIR"
+          cp -R "$APP_PATH" "$IPA_DIR/Runner.app"
+
+          cd "$RUNNER_TEMP/ipa"
+          /usr/bin/zip -qry "$IPA_PATH" Payload
+
+          test -s "$IPA_PATH"
+          /usr/bin/unzip -t "$IPA_PATH"
+
+          echo "IPA created: $IPA_PATH"
+
+      - name: Upload unsigned IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: ${{ runner.temp }}/Runner-unsigned.ipa
+          if-no-files-found: error
 
       - name: Upload iOS app artifact
         uses: actions/upload-artifact@v4
         with:
           name: ios-unsigned-app
-          path: build/ios/iphoneos/**/*.app
+          path: build/ios/iphoneos/Runner.app
           if-no-files-found: error
